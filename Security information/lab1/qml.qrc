@@ -1,0 +1,23 @@
+<RCC>
+    <qresource prefix="/">
+        <file>main.qml</file>
+        <file>icons/info_button.png</file>
+        <file>about.qml</file>
+        <file>login.qml</file>
+        <file>workspace.qml</file>
+        <file>icons/exit.png</file>
+        <file>icons/profile.png</file>
+        <file>icons/users.png</file>
+        <file>profile.qml</file>
+        <file>icons/edit.png</file>
+        <file>users.qml</file>
+        <file>create_user.qml</file>
+        <file>icons/add.png</file>
+        <file>qmldir</file>
+        <file>edit_user.qml</file>
+        <file>icons/edit_user.png</file>
+        <file>icons/remove_user.png</file>
+        <file>change_password.qml</file>
+        <file>first_login.qml</file>
+    </qresource>
+</RCC>

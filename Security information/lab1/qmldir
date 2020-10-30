@@ -1,0 +1,6 @@
+# Module description "qmldir"
+module Components
+
+CreateUserWindow    1.0     ./create_user.qml
+EditUserWindow      1.0     ./edit_user.qml
+FirstLoginWindow    1.0     ./first_login.qml

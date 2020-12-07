@@ -1,65 +1,22 @@
 package ru.stankin.labs;
 
-import java.net.URL;
-import java.nio.ByteBuffer;
-import java.nio.channels.Channels;
-import java.nio.channels.FileChannel;
-import java.nio.channels.ReadableByteChannel;
-import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
-import java.text.DecimalFormat;
-import java.text.NumberFormat;
-
 public class Main {
 
-    public static void main(String[] args) throws Exception {
+    private static final String ADDRESS = "localhost";
+    private static final int PORT = 25665;
+    private static final int PORT2 = 25666;
 
-        URL address = new URL("http://speedtest.ftp.otenet.gr/files/test10Mb.db");
-        String fileName = "test10Mb.db";
-        NumberFormat formatter = new DecimalFormat("#0.00");
-        int speed = 1024 * 1024; // 1 мбайт
+    public static void main(String[] args) {
+        // Реализовать приложение позволяющее скачивать файл с ограниченной скоростью.
 
-        try (ReadableByteChannel channel = Channels.newChannel(address.openStream());
-             FileChannel fileChannel = FileChannel.open(
-                     Path.of(fileName),
-                     StandardOpenOption.CREATE,
-                     StandardOpenOption.TRUNCATE_EXISTING,
-                     StandardOpenOption.WRITE
-             )) {
-            System.out.println("Download from " + address
-                    + " with speed: " + speed
-                    + " byte/sec or "
-                    + formatter.format(((double) speed) / 1024 / 1024) + " mbyte/sec");
+        Server server = new Server(32);
+        server.start(ADDRESS, PORT);
+        Client client = new Client(64);
+        client.start(ADDRESS, PORT);
 
-            ByteBuffer downloadBuffer = ByteBuffer.allocate(speed);
-
-            long byteFileSize = 0;
-            while (true) {
-                long start = System.currentTimeMillis();
-                int readCount = channel.read(downloadBuffer);
-                long downloadTime = System.currentTimeMillis() - start;
-
-                if (readCount <= 0) {
-                    break;
-                }
-
-                fileChannel.write(downloadBuffer.flip());
-                byteFileSize += readCount;
-                downloadBuffer.clear();
-
-                System.out.println("Downloading " + formatter.format(((double) byteFileSize) / 1024 / 1024) + " MB");
-
-                long delta = 1000 - downloadTime;
-                // Усреднее скорости. Т.е если текущая скорость еще не поднялось
-                // до необходимой (ограничивающей скорости), то задержку мы ставим меньше
-                // delta -= (int) ((double) (speed - readCount) * 1000 / speed);
-
-                if (delta > 0) {
-                    Thread.sleep(delta);
-                }
-            }
-
-            System.out.println("File downloaded!");
-        }
+        Server server2 = new Server(128);
+        server2.start(ADDRESS, PORT2);
+        Client client2 = new Client(64);
+        client2.start(ADDRESS, PORT2);
     }
 }

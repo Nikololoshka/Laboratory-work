@@ -2,7 +2,9 @@ package ru.stankin.labs;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.ServerSocket;
 import java.nio.ByteBuffer;
+import java.nio.channels.AsynchronousCloseException;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
@@ -11,8 +13,10 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
+import java.util.Scanner;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.SynchronousQueue;
 import java.util.stream.IntStream;
 
 public class Server {
@@ -20,6 +24,10 @@ public class Server {
     private static final String FILENAME = "test_data.txt";
 
     private final ExecutorService service = Executors.newSingleThreadExecutor();
+    private final ExecutorService pool = Executors.newFixedThreadPool(10);
+
+    private ServerSocketChannel serverSocket;
+
     private final int speed;
     private final int log;
 
@@ -30,41 +38,60 @@ public class Server {
 
     public void start(String address, int port) {
         service.execute(() -> {
-            startServer(address, port);
-            service.shutdown();
+            try {
+                startServer(address, port);
+            } catch (IOException e) {
+                if (!(e instanceof AsynchronousCloseException)) {
+                    e.printStackTrace();
+                }
+            }
         });
     }
 
-    private void startServer(String address, int port) {
-        try (ServerSocketChannel serverSocket = ServerSocketChannel.open()) {
-            serverSocket.bind(new InetSocketAddress(address, port));
-            try (SocketChannel clientSocket = serverSocket.accept()) {
-                sendData(clientSocket);
+    public void listen() {
+        try (Scanner scanner = new Scanner(System.in)) {
+            while (true) {
+                String command = scanner.next();;
+                if (command.equalsIgnoreCase("exit")) {
+                    System.out.println("Server closing...");
+                    serverSocket.close();
+                    service.shutdown();
+                    pool.shutdown();
+                    break;
+                }
             }
-
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    private void sendData(SocketChannel channel) throws IOException {
+    private void startServer(String address, int port) throws IOException {
+        serverSocket = ServerSocketChannel.open();
+        serverSocket.bind(new InetSocketAddress(address, port));
+        while (!serverSocket.socket().isClosed()) {
+            SocketChannel clientSocket = serverSocket.accept();
+            pool.execute(() -> sendData(clientSocket));
+        }
+    }
+
+    private void sendData(SocketChannel channel) {
         NumberFormat formatter = new DecimalFormat("#0.00");
         Path path = Path.of(FILENAME);
         createTestData();
 
-        System.out.println(
-                "[Server " + log + "] " +
-                "Send to: " + channel.getLocalAddress() +
-                ", speed: " + formatter.format(speed / 1024) + " kbyte/sec"
-        );
+        try (channel; FileChannel fileChannel = FileChannel.open(path)) {
+            System.out.println(
+                    "[Server " + log + "] " +
+                            "Send to: " + channel.getLocalAddress() +
+                            ", speed: " + formatter.format(speed / 1024) + " kbyte/sec"
+            );
 
-        try (FileChannel fileChannel = FileChannel.open(path)) {
             ByteBuffer buffer = ByteBuffer.allocate(speed);
 
             long byteFileSize = 0;
             while (true) {
                 long start = System.currentTimeMillis();
-                int readCount =  fileChannel.read(buffer);
+                int readCount = fileChannel.read(buffer);
                 if (readCount <= 0) {
                     break;
                 }
@@ -77,7 +104,7 @@ public class Server {
 
                 System.out.println(
                         "[Server " + log + "] " +
-                        "Sent: " + formatter.format(byteFileSize / (1024.0 * 1024.0)) + " MB");
+                                "Sent: " + formatter.format(byteFileSize / (1024.0 * 1024.0)) + " MB");
 
                 long delta = 1000 - sentTime;
                 if (delta > 0) {

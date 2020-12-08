@@ -14,15 +14,16 @@ import java.util.concurrent.Executors;
 
 public class Client {
 
-    private static final String FILENAME = "download_file.txt";
 
     private final ExecutorService service = Executors.newSingleThreadExecutor();
+    private final String filename;
     private final int speed;
     private final int log;
 
     public Client(int speed) {
         this.speed = 1024 * speed;
         this.log = speed;
+        this.filename = "download_file_"+ log + ".txt";
     }
 
     public void start(String address, int port) {
@@ -52,7 +53,7 @@ public class Client {
         );
 
         try (FileChannel fileChannel = FileChannel.open(
-                Path.of(FILENAME),
+                Path.of(filename),
                 StandardOpenOption.CREATE,
                 StandardOpenOption.TRUNCATE_EXISTING,
                 StandardOpenOption.WRITE)) {

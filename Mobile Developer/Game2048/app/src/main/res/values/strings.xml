@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">2048</string>
+    <string name="score">Счет:</string>
+    <string name="game_lose">Поражение. Нажмите, чтобы начать заново</string>
+    <string name="game_win">Поздравляем, вы собрали число 2048. Нажмите, чтобы начать заново</string>
+    <string name="best_score">Лучший результат</string>
+    <string name="score_view">Просмотр счета</string>
+    <string name="restart_game">Начать заново</string>
+    <string name="dark_mode">Темная тема</string>
+</resources>
